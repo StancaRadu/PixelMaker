@@ -1,0 +1,26 @@
+html, body, #__nuxt {
+    height: 100%;
+}
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'VT323', monospace;
+}
+
+:root {
+  --pastel-cream:   #f3ecd8; /* Soft creamy background */
+  --warm-beige:     #d7c8a6; /* Warm beige panel */
+  --faded-orange:   #dba45f; /* Muted orange accent */
+  --soft-yellow:    #f1da9e; /* Pale yellow highlights */
+  --rich-brown:     #6b4c3b; /* Deep brown accents */
+  --muted-gray:     #9a8f87; /* Neutral muted gray */
+  --shadow-brown:   #4a3622; /* Dark shadow brown */
+  --off-white:      #f9f7f1; /* Gentle off-white for highlights */
+  --pastel-blue:    #99a0a7; /* Soft pastel blue */
+}
+
+.standard-border{
+    border: 0 solid var(--shadow-brown);
+}
