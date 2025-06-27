@@ -94,6 +94,10 @@ canvas {
 </style>
 
 <script setup>
+import draw from '~/composable/canvas/draw'
+import drawGrid from '~/composable/canvas/drawGrid'
+import drawBackground from '~/composable/canvas/drawBackground'
+
 const prefs = activeSettings();
 
 const workArea = ref(null)
@@ -130,8 +134,21 @@ onMounted(() => {
             const ctx = canvasGrid.value.getContext('2d');
             ctx.canvas.width  = scale.value * prefs.canvasSettings.width;
             ctx.canvas.height = scale.value * prefs.canvasSettings.height;
-            drawGrid()
-            drawBackgroundChecker()
+            drawGrid(
+                canvasGrid,
+                prefs.canvasSettings.width,
+                prefs.canvasSettings.height,
+                prefs.canvasSettings.gridSize,
+                prefs.canvasSettings.gridColor,
+                prefs.canvasSettings.gridWidth
+            )
+            drawBackground(
+                canvasBg,
+                prefs.canvasSettings.backgroundSize,
+                prefs.canvasSettings.width,
+                prefs.canvasSettings.height,
+                prefs.canvasSettings.backgroundColors
+            )
         }
     })
     resizeObserver.observe(canvasWrapper.value);
@@ -153,55 +170,7 @@ function handleMouseOnCanvas(e){
     const x = Math.floor(mouseX/(rect.width/prefs.canvasSettings.width))
     const y = Math.floor(mouseY/(rect.height/prefs.canvasSettings.height))
     
-    draw(x,y)
-}
-
-function draw(x, y, color = prefs.currentColor, width = 1, height = 1, ctx = canvas.value.getContext('2d')) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, width, height);
-}
-
-function drawGrid() {
-    const w = canvasGrid.value.width;
-    const h = canvasGrid.value.height;
-    const preferedWidth = prefs.canvasSettings.width;
-    const preferedHeight = prefs.canvasSettings.height;
-    const ctx = canvasGrid.value.getContext('2d');
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = prefs.canvasSettings.gridColor;
-    ctx.lineWidth = prefs.canvasSettings.gridWidth;
-
-    // Vertical lines
-    for (let x = 0; x < preferedWidth; x+=prefs.canvasSettings.gridSize) {
-        
-        ctx.beginPath();
-        ctx.moveTo(x * (w/preferedWidth) + .5, 0);
-        ctx.lineTo(x * (w/preferedWidth) + .5, h);
-        ctx.stroke();
-    }
-    // Horizontal lines
-    for (let y = 0; y < preferedHeight; y+=prefs.canvasSettings.gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y * (h/preferedHeight) + .5);
-        ctx.lineTo(w, y * (h/preferedHeight) + .5);
-        ctx.stroke();
-    }
-}
-
-function drawBackgroundChecker(){
-    const preferedWidth = prefs.canvasSettings.width;
-    const preferedHeight = prefs.canvasSettings.height;
-    const bgSize = prefs.canvasSettings.backgroundSize
-    const ctx = canvasBg.value.getContext('2d');
-    let swapper = true;
-    for (let x = 0; x < preferedWidth; x+=bgSize) {
-        swapper = !swapper
-        for (let y = 0; y < preferedHeight; y+=bgSize) {
-            swapper = !swapper
-            const color = swapper ? prefs.canvasSettings.backgroundColors[0] : prefs.canvasSettings.backgroundColors[1];
-            draw(x, y, color, bgSize, bgSize, ctx)
-        }
-    }
+    draw(canvas,x,y)
 }
 
 function handleScroll(e) {

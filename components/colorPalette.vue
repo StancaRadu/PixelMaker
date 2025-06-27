@@ -107,44 +107,41 @@ const isActiveRemove = ref(false);
 
 onMounted(() => {
     isMounted.value = true
-    allowAddColors = computed(() => prefs.activePalette().length < prefs.maxPaletteSize);
-    if (prefs.activePalette().length >= prefs.maxPaletteSize) allowAddColors.value = false;
+    allowAddColors = computed(() => prefs.activePalette().length < prefs.paletteSettings.maxPaletteSize);
+    if (prefs.activePalette().length >= prefs.paletteSettings.maxPaletteSize) allowAddColors.value = false;
     isUseable = computed(() => prefs.activePalette().length > 0);
+    console.log(prefs.activePalette().length);
+    
 })
 
-// prefs.activePalette() = []
 
 
 
 function addColor() {
-    prefs.addColor(prefs.currentColor)
+    prefs.addColor(prefs.paletteSettings.currentColor)
     
     const paletteSize = prefs.activePalette().length;
     
-    if (paletteSize >= prefs.maxPaletteSize) allowAddColors.value = false;
+    if (paletteSize >= prefs.paletteSettings.maxPaletteSize) allowAddColors.value = false;
 }
 function changeColor(color, id) {
     if (isActiveEdit.value) {
-        const square = prefs.activePalette().find(c => c.id === id)
-        square.hex = prefs.currentColor;
+        const square = prefs.activePalette().find(color => color.id === id)
+        square.hex = prefs.paletteSettings.currentColor;
     }else if (isActiveRemove.value) {
-        const squareI = prefs.activePalette().findIndex(c => c.id === id)
+        const squareI = prefs.activePalette().findIndex(color => color.id === id)
         prefs.activePalette().splice(squareI, 1)
     }else {
-        prefs.currentColor = color;
+        prefs.paletteSettings.currentColor = color;
     }
     
 }
 function editPalette() {
-    if (isActiveRemove.value) {
-        isActiveRemove.value = false;
-    }
+    if (isActiveRemove.value) { isActiveRemove.value = false; }
     isActiveEdit.value = !isActiveEdit.value;
 }
 function removePalette() {
-    if (isActiveEdit.value) {
-        isActiveEdit.value = false;
-    }
+    if (isActiveEdit.value) { isActiveEdit.value = false; }
     isActiveRemove.value = !isActiveRemove.value;
 }
 

@@ -7,6 +7,7 @@ export const activeSettings = defineStore('activeSettings', {
             currentColor: '#FFFFFFFF',
             palettes: {
                 default:  [] as { id: number, hex: string }[],
+                pastel:  [] as { id: number, hex: string }[],
             } as Record<string, { id: number; hex: string }[]>,
         },
         canvasSettings: {
@@ -16,16 +17,16 @@ export const activeSettings = defineStore('activeSettings', {
             maxZoom: 40,
             zoomStep: 20,
             gridSize: 4,
+            gridWidth: 2,
+            gridColor: '#2020FF',
             backgroundSize: 4,
             backgroundColors: ['#303030', '#505050'],
-            gridColor: '#2020FF',
-            gridWidth: 2,
         },
     }),
     actions: {
         addColor(hex: string) {
             const id = Date.now() + Math.random();
-            this.activePalette().push({ id, hex })
+            this.activePalette().push({ id, hex });
         },
         removeColor(index: number) {
             this.activePalette().splice(index, 1)
@@ -33,8 +34,10 @@ export const activeSettings = defineStore('activeSettings', {
         activePalette(){
             return this.paletteSettings.palettes[this.paletteSettings.activePaletteName]
         },
-        setActivePalette(){
-            this.paletteSettings.activePaletteName = 'default'
+        setActivePalette(name: string) {
+            if (this.paletteSettings.palettes.hasOwnProperty(name)) {
+                this.paletteSettings.activePaletteName = name
+            }
         }
   },
     persist: true,
