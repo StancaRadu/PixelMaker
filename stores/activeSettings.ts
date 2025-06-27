@@ -1,16 +1,41 @@
 export const activeSettings = defineStore('activeSettings', {
     state: () => ({
-        maxPaletteSize: 16,
-        paletteSize: 0,
-        currentColors: [] as { id: number, hex: string }[],
-        currentColor: '#FFFFFFFF'
+        paletteSettings:{
+            maxPaletteSize: 16,
+            paletteSize: 0,
+            activePaletteName: 'default',
+            currentColor: '#FFFFFFFF',
+            palettes: {
+                default:  [] as { id: number, hex: string }[],
+            } as Record<string, { id: number; hex: string }[]>,
+        },
+        canvasSettings: {
+            width: 16,
+            height: 16,
+            minZoom: 2000,
+            maxZoom: 40,
+            zoomStep: 20,
+            gridSize: 4,
+            backgroundSize: 4,
+            backgroundColors: ['#303030', '#505050'],
+            gridColor: '#2020FF',
+            gridWidth: 2,
+        },
     }),
     actions: {
         addColor(hex: string) {
-            const id = Date.now() + Math.random()
-            this.currentColors.push({ id, hex })
+            const id = Date.now() + Math.random();
+            this.activePalette().push({ id, hex })
         },
-        removeColor(index: number) { this.currentColors.splice(index, 1) },
+        removeColor(index: number) {
+            this.activePalette().splice(index, 1)
+        },
+        activePalette(){
+            return this.paletteSettings.palettes[this.paletteSettings.activePaletteName]
+        },
+        setActivePalette(){
+            this.paletteSettings.activePaletteName = 'default'
+        }
   },
     persist: true,
 })

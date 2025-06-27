@@ -1,10 +1,10 @@
 <template>
     <leftToolsBg>
         <div id="colorPicker"
-            :style="{ backgroundColor: isMounted ? currentColor : '#FFFFFFFF' }"
+            :style="{ backgroundColor: isMounted ? prefs.paletteSettings.currentColor : '#FFFFFFFF' }"
             :class="{ 'activeBorder': showColorMenu }"
             @click="openColorMenu">
-            <span>{{ currentColor }}</span>
+            <span>{{ isMounted ? prefs.paletteSettings.currentColor : '#FFFFFFFF' }}</span>
             <floatingMenu class="colorPickerMenu"
                 v-if="showColorMenu"
                 @click.stop>
@@ -217,7 +217,6 @@ leftToolsBg {
 const prefs = activeSettings()
 const isMounted = ref(false)
 let showColorMenu = ref(false)
-let currentColor = ref('#FFFFFFFF')
 
 let valR = ref()
 let valB = ref()
@@ -225,25 +224,25 @@ let valG = ref()
 
 onMounted(() => {
     isMounted.value = true
-    currentColor = computed(() => prefs.currentColor)
 })
 
 watch([valR, valG, valB], ([r, g, b]) => {
-  const clampedR = Math.min(Math.max(r, 0), 255)
-  const clampedG = Math.min(Math.max(g, 0), 255)
-  const clampedB = Math.min(Math.max(b, 0), 255)
+    const clampedR = Math.min(Math.max(r, 0), 255)
+    const clampedG = Math.min(Math.max(g, 0), 255)
+    const clampedB = Math.min(Math.max(b, 0), 255)
 
-  if (clampedR !== r) valR.value = clampedR
-  if (clampedG !== g) valG.value = clampedG
-  if (clampedB !== b) valB.value = clampedB
+    if (clampedR !== r) valR.value = clampedR
+    if (clampedG !== g) valG.value = clampedG
+    if (clampedB !== b) valB.value = clampedB
 
-  prefs.currentColor = `#${[clampedR, clampedG, clampedB]
-    .map(v => v.toString(16).padStart(2, '0'))
-    .join('')}`.toUpperCase() + 'FF'
+    prefs.paletteSettings.currentColor = `#${[clampedR, clampedG, clampedB]
+        .map(v => v.toString(16).padStart(2, '0'))
+        .join('')}`.toUpperCase() + 'FF'
+
 })
 
 watch(
-  () => prefs.currentColor,
+  () => prefs.paletteSettings.currentColor,
   (newHex) => {
     const hex = newHex.replace('#', '').slice(0, 6)
     if (hex.length === 6) {

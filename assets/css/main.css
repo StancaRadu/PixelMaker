@@ -19,6 +19,7 @@ html, body, #__nuxt {
   --shadow-brown:   #4a3622; /* Dark shadow brown */
   --off-white:      #f9f7f1; /* Gentle off-white for highlights */
   --pastel-blue:    #99a0a7; /* Soft pastel blue */
+  --light-gray:     #afafaf;
 }
 
 .standard-border{

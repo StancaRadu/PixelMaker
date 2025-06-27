@@ -1,18 +1,85 @@
 <template>
-    <leftToolsBg>
-        <div id="colorPallete-area">
+    <leftToolsBg class="colorPaletteWrapper">
+        <div class="colorPalette-settings">
+            <div id="editColorPaletteButton" class="colorPaletteButton standard-border"
+                :class="{ disabled: !isUseable, active: isActiveEdit }"
+                @click="editPalette">EDIT</div>
+            <div id="removeColorPaletteButton" class="colorPaletteButton standard-border"
+                :class="{ disabled: !isUseable, active: isActiveRemove }"
+                @click="removePalette">REMOVE</div>
+        </div>
+        <div id="colorPalette-area">
             <colorPaletteBox 
                 v-for="color in colors" :key="color.id" :color="color.hex"
                 :style="{ background: color.hex }"
                 v-if="isMounted"
-                @click="changeColor(color.hex)"/>
+                @click="changeColor(color.hex, color.id)"/>
             <colorPaletteBox v-if="allowAddColors" id="addBoxButton" @click="addColor" > <plusGraphic /> </colorPaletteBox  >
         </div>
     </leftToolsBg>
 </template>
 
 <style scoped>
-#colorPallete-area {
+.colorPaletteWrapper {
+    display: flex;
+    flex-direction: column;
+}
+.colorPalette-settings {
+    width: 100%;
+    aspect-ratio: 4;
+    padding: 4px;
+    
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+.colorPaletteButton {
+    width: 100%;
+    height: 100%;
+    border-width: 2px;
+    background: var(--off-white);
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.active {
+    box-shadow: inset 0 0 4px 1px var(--shadow-brown);
+    border-style: dashed;
+
+    position: relative;
+    &::after{
+        content: '';
+        position: absolute;
+        left: 0;
+        
+        width: 20%;
+        height: 100%;
+        background-color: var(--muted-gray);
+        opacity: .5;
+        
+        animation: slide 1s infinite alternate linear;
+    }
+
+}
+@keyframes slide {
+    from {
+        left: 0;
+    }
+    to {
+        left: 100%;
+        transform: translateX(-100%);
+    }
+}
+
+#colorPalette-area {
     width: 100%;
     max-width: 100%;
     height: 100%;
@@ -32,26 +99,54 @@
 <script setup>
 let isMounted = ref(false);
 const prefs = activeSettings()
-const allowAddColors = ref(true);
-const colors = computed(() => prefs.currentColors)
+let allowAddColors = ref(true);
+const colors = computed(() => prefs.activePalette())
+let isUseable = ref(false);
+const isActiveEdit = ref(false);
+const isActiveRemove = ref(false);
 
 onMounted(() => {
     isMounted.value = true
-    if (prefs.currentColors.length >= prefs.maxPaletteSize) allowAddColors.value = false;
+    allowAddColors = computed(() => prefs.activePalette().length < prefs.maxPaletteSize);
+    if (prefs.activePalette().length >= prefs.maxPaletteSize) allowAddColors.value = false;
+    isUseable = computed(() => prefs.activePalette().length > 0);
 })
 
-// prefs.currentColors = []
+// prefs.activePalette() = []
+
+
 
 function addColor() {
     prefs.addColor(prefs.currentColor)
     
-    const paletteSize = prefs.currentColors.length;
+    const paletteSize = prefs.activePalette().length;
     
     if (paletteSize >= prefs.maxPaletteSize) allowAddColors.value = false;
 }
-function changeColor(color) {
-    prefs.currentColor = color;
-}   
+function changeColor(color, id) {
+    if (isActiveEdit.value) {
+        const square = prefs.activePalette().find(c => c.id === id)
+        square.hex = prefs.currentColor;
+    }else if (isActiveRemove.value) {
+        const squareI = prefs.activePalette().findIndex(c => c.id === id)
+        prefs.activePalette().splice(squareI, 1)
+    }else {
+        prefs.currentColor = color;
+    }
+    
+}
+function editPalette() {
+    if (isActiveRemove.value) {
+        isActiveRemove.value = false;
+    }
+    isActiveEdit.value = !isActiveEdit.value;
+}
+function removePalette() {
+    if (isActiveEdit.value) {
+        isActiveEdit.value = false;
+    }
+    isActiveRemove.value = !isActiveRemove.value;
+}
 
 </script>
 
