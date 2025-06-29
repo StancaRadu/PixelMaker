@@ -1,0 +1,76 @@
+<script setup>
+const settings = useSettingsStore()
+const isMounted = ref(false)
+let showColorMenu = ref(false)
+
+let valR = ref()
+let valB = ref()
+let valG = ref()
+
+onMounted(() => {
+    isMounted.value = true
+})
+
+watch([valR, valG, valB], ([r, g, b]) => {
+    const clampedR = Math.min(Math.max(r, 0), 255)
+    const clampedG = Math.min(Math.max(g, 0), 255)
+    const clampedB = Math.min(Math.max(b, 0), 255)
+
+    if (clampedR !== r) valR.value = clampedR
+    if (clampedG !== g) valG.value = clampedG
+    if (clampedB !== b) valB.value = clampedB
+
+    settings.paletteSettings.currentColor = `#${[clampedR, clampedG, clampedB]
+        .map(v => v.toString(16).padStart(2, '0'))
+        .join('')}`.toUpperCase() + 'FF'
+
+})
+
+watch(
+  () => settings.paletteSettings.currentColor,
+  (newHex) => {
+    const hex = newHex.replace('#', '').slice(0, 6)
+    if (hex.length === 6) {
+      valR.value = parseInt(hex.slice(0, 2), 16)
+      valG.value = parseInt(hex.slice(2, 4), 16)
+      valB.value = parseInt(hex.slice(4, 6), 16)
+    }
+  },
+  { immediate: true }
+)
+
+const gradientR = computed(() => 
+    `linear-gradient(90deg, rgba(0, ${valG.value}, ${valB.value}, 1) 0%, rgba(255, ${valG.value}, ${valB.value}, 1) 100%)`)
+const gradientG = computed(() => 
+    `linear-gradient(90deg, rgba(${valR.value}, 0, ${valB.value}, 1) 0%, rgba(${valR.value}, 255, ${valB.value}, 1) 100%)`)
+const gradientB = computed(() => 
+    `linear-gradient(90deg, rgba(${valR.value}, ${valG.value}, 0, 1) 0%, rgba(${valR.value}, ${valG.value}, 255, 1) 100%)`)
+
+function openColorMenu(){ showColorMenu.value = !showColorMenu.value }
+function startDrag(e) {
+    e.preventDefault()
+
+    const startPosition = e.clientX;
+    const startV = e.offsetX;
+    let val;
+
+    switch (e.target.id) {
+        case 'colorSliderRed': val = valR; break
+        case 'colorSliderGreen': val = valG; break
+        case 'colorSliderBlue': val = valB; break
+    }
+    
+    const move = (e) => {
+        const distance = e.clientX - startPosition;
+        val.value = startV + distance;
+    }
+    const stop = () => {
+        window.removeEventListener('mousemove', move)
+        window.removeEventListener('mouseup', stop)
+    }
+
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', stop)
+    
+    move(e)
+}

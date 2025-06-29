@@ -1,0 +1,147 @@
+<script setup>
+import draw from '~/composable/canvas/draw'
+import drawGrid from '~/composable/canvas/drawGrid'
+import drawBackground from '~/composable/canvas/drawBackground'
+
+const prefs = activeSettings();
+
+const workArea = ref(null)
+const scrollArea = ref(null)
+const canvasStack = ref(null)
+const canvasWrapper = ref(null);
+const canvasBg = ref(null)
+const canvas = ref(null)
+const canvasGrid = ref(null)
+
+let pixelsOnX = ref(null)
+let pixelsOnY = ref(null)
+
+let resizeObserver = null;
+
+const canvases = [canvasBg, canvas, canvasGrid]
+
+const drawGridParams = computed(()=>[
+    canvasGrid,
+    prefs.canvasSettings.width,
+    prefs.canvasSettings.height, 
+    prefs.canvasSettings.gridSize,
+    prefs.canvasSettings.gridColor,
+    prefs.canvasSettings.gridWidth,
+    !prefs.canvasSettings.showGrid
+])
+const drawBackgroundParams = computed(()=>[
+    canvasBg,
+    prefs.canvasSettings.backgroundSize,
+    prefs.canvasSettings.width,
+    prefs.canvasSettings.height,
+    prefs.canvasSettings.backgroundColors,
+    !prefs.canvasSettings.showBackground
+])
+
+
+
+onMounted(() => {
+    pixelsOnX.value = prefs.canvasSettings.width
+    pixelsOnY.value = prefs.canvasSettings.height
+    
+    resizeObserver = new ResizeObserver(() => {
+        let xPixelSize = Math.ceil(canvasWrapper.value.getBoundingClientRect().width / pixelsOnX.value);
+        let yPixelSize =  Math.ceil(canvasWrapper.value.getBoundingClientRect().height / pixelsOnY.value);
+        const pixelSize = Math.min(xPixelSize, yPixelSize)
+        
+        canvasStack.value.style.width = `${Math.round(pixelSize * pixelsOnX.value)}px`
+        canvasStack.value.style.height = `${Math.round(pixelSize *pixelsOnY.value)}px`
+
+        const ctx = canvasGrid.value.getContext('2d');
+        ctx.canvas.width  = pixelSize * pixelsOnX.value;
+        ctx.canvas.height = pixelSize * pixelsOnY.value;
+        
+        drawGrid(...drawGridParams.value)
+        drawBackground(...drawBackgroundParams.value)
+    }
+)
+
+
+    resizeObserver.observe(canvasWrapper.value);
+    drawBackground(...drawBackgroundParams.value)
+
+})
+
+watch( () => prefs.canvasSettings.showGrid,
+  () => { drawGrid(...drawGridParams.value) }
+)
+watch( () => prefs.canvasSettings.showBackground,
+    ()=>{ drawBackground(...drawBackgroundParams.value) }
+)
+
+function handleClick(e){
+    const rect = canvas.value.getBoundingClientRect()
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const x = Math.floor(mouseX/(rect.width/pixelsOnX.value)) //real pixels / drawing pixels
+    const y = Math.floor(mouseY/(rect.height/pixelsOnY.value))
+    
+    draw(canvas, x, y, prefs.paletteSettings.currentColor)
+}
+
+function handleScroll(e) {
+    e.preventDefault();    
+
+    const currentZoom = parseInt(getComputedStyle(workArea.value).getPropertyValue('--zoom'));
+    let newZoom = currentZoom
+
+    const rect = scrollArea.value.getBoundingClientRect()
+    const mouseX = e.clientX - rect.left + scrollArea.value.scrollLeft;
+    const mouseY = e.clientY - rect.top + scrollArea.value.scrollTop;
+
+    if (e.deltaY < 0) {
+        if (currentZoom >= prefs.canvasSettings.minZoom) return;
+        newZoom = currentZoom + prefs.canvasSettings.zoomStep
+    }else{
+        if (currentZoom <= prefs.canvasSettings.maxZoom) return
+        newZoom = currentZoom - prefs.canvasSettings.zoomStep
+    }
+
+    workArea.value.style.setProperty('--zoom', newZoom);
+
+    const scale = newZoom / currentZoom;
+
+    scrollArea.value.scrollLeft = (mouseX * scale) - (e.clientX - rect.left);
+    scrollArea.value.scrollTop = (mouseY * scale) - (e.clientY - rect.top);
+}
+
+let isDragging = false
+let startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0
+
+function handleMouseDown(e) {
+    if (e.button !== 1) return // middle mouse only
+    e.preventDefault()
+    
+    isDragging = true
+    startX = e.clientX
+    startY = e.clientY
+    scrollLeft = scrollArea.value.scrollLeft
+    scrollTop = scrollArea.value.scrollTop
+
+    scrollArea.value.style.cursor = 'grabbing'
+}
+
+function handleMouseMove(e) {
+    if (!isDragging) return
+    e.preventDefault()
+    const dx = e.clientX - startX
+    const dy = e.clientY - startY
+    scrollArea.value.scrollLeft = scrollLeft - dx
+    scrollArea.value.scrollTop = scrollTop - dy
+}
+
+function stopDragging() {
+    if (!isDragging) return
+    isDragging = false
+    scrollArea.value.style.cursor = 'default'
+}
+
+
+
+</script>

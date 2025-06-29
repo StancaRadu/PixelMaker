@@ -12,6 +12,7 @@ html, body, #__nuxt {
 :root {
   --pastel-cream:   #f3ecd8; /* Soft creamy background */
   --warm-beige:     #d7c8a6; /* Warm beige panel */
+  --warm-yellow:    #d3ceb4;
   --faded-orange:   #dba45f; /* Muted orange accent */
   --soft-yellow:    #f1da9e; /* Pale yellow highlights */
   --rich-brown:     #6b4c3b; /* Deep brown accents */

@@ -1,16 +1,11 @@
-/**
- * Draws a grid on the canvas
- * @param stepX - once how many pixels to the left should it add a line
- * @param stepY - once how many pixels to the bottom should it add a line.
- * @param size - The width and height of the square in pixels.
- */
-export default function drawGrid(canvas: any, width: number, height: number, step: number, color: string, lineWidth : number){
+export default function drawGrid(canvas: any, width: number, height: number, step: number, color: string, lineWidth : number, clear: boolean){
     const w = canvas.value.width;
     const h = canvas.value.height;
 
     //draw settings
     const ctx = canvas.value.getContext('2d');
     ctx.clearRect(0, 0, w, h);
+    if (clear) return
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
 

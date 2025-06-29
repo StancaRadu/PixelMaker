@@ -1,10 +1,10 @@
 <template>
     <leftToolsBg>
         <div id="colorPicker"
-            :style="{ backgroundColor: isMounted ? prefs.paletteSettings.currentColor : '#FFFFFFFF' }"
+            :style="{ backgroundColor: isMounted ? settings.palette.activeColorHex : '#FFFFFFFF' }"
             :class="{ 'activeBorder': showColorMenu }"
             @click="openColorMenu">
-            <span>{{ isMounted ? prefs.paletteSettings.currentColor : '#FFFFFFFF' }}</span>
+            <span>{{ isMounted ? settings.palette.activeColorHex : '#FFFFFFFF' }}</span>
             <floatingMenu class="colorPickerMenu"
                 v-if="showColorMenu"
                 @click.stop>
@@ -23,10 +23,7 @@
                                 :style="{ background: gradientR }"
                                 @mousedown="startDrag">
                                     <div class="slider-thumb" 
-                                    :style="{ 
-                                        left: valR + 'px',
-                                        // backgroundColor: `rgb(${valR}, ${valG}, ${valB})`
-                                    }"></div>
+                                    :style="{  left: `${valR}px` }"></div>
                             </div>
                             <input 
                                 id="colorInputRed" class="colorInput" 
@@ -39,10 +36,7 @@
                             <div class="colorSlider" id="colorSliderGreen" :style="{ background: gradientG }"
                                 @mousedown="startDrag">
                                     <div class="slider-thumb" 
-                                    :style="{ 
-                                        left: valG + 'px',
-                                        // backgroundColor: `rgb(${valR}, ${valG}, ${valB})`
-                                    }"></div>
+                                    :style="{ left:`${valG}px` }"></div>
                             </div>
                             <input 
                                 id="colorInputGreen" class="colorInput" 
@@ -55,10 +49,7 @@
                             <div class="colorSlider" id="colorSliderBlue" :style="{ background: gradientB }"
                                 @mousedown="startDrag">
                                     <div class="slider-thumb" 
-                                    :style="{ 
-                                        left: valB + 'px',
-                                        // backgroundColor: `rgb(${valR}, ${valG}, ${valB})`
-                                    }"></div>
+                                    :style="{ left:`${valB}px` }"></div>
                             </div>
                             <input 
                                 id="colorInputBlue" class="colorInput" 
@@ -214,17 +205,15 @@ leftToolsBg {
 </style>
 
 <script setup>
-const prefs = activeSettings()
+const settings = useSettingsStore()
 const isMounted = ref(false)
 let showColorMenu = ref(false)
 
-let valR = ref()
-let valB = ref()
-let valG = ref()
+let valR = ref(0)
+let valB = ref(0)
+let valG = ref(0)
 
-onMounted(() => {
-    isMounted.value = true
-})
+onMounted(() => { isMounted.value = true })
 
 watch([valR, valG, valB], ([r, g, b]) => {
     const clampedR = Math.min(Math.max(r, 0), 255)
@@ -235,14 +224,15 @@ watch([valR, valG, valB], ([r, g, b]) => {
     if (clampedG !== g) valG.value = clampedG
     if (clampedB !== b) valB.value = clampedB
 
-    prefs.paletteSettings.currentColor = `#${[clampedR, clampedG, clampedB]
-        .map(v => v.toString(16).padStart(2, '0'))
-        .join('')}`.toUpperCase() + 'FF'
+    settings.palette.activeColorHex = `#${
+        [clampedR, clampedG, clampedB]
+            .map(v => v.toString(16).padStart(2, '0'))
+            .join('')}`.toUpperCase() + 'FF'
 
 })
 
 watch(
-  () => prefs.paletteSettings.currentColor,
+  () => settings.palette.activeColorHex,
   (newHex) => {
     const hex = newHex.replace('#', '').slice(0, 6)
     if (hex.length === 6) {

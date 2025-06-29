@@ -1,20 +1,27 @@
 <template>
     <leftToolsBg class="colorPaletteWrapper">
+        <div class="colorPalette-selector">
+            <div id="colorPaletteSelector" class="standard-border colorPaletteButton">
+                {{isMounted ? settings.palette.currentPaletteName : ''}}
+            </div>
+        </div>
         <div class="colorPalette-settings">
             <div id="editColorPaletteButton" class="colorPaletteButton standard-border"
-                :class="{ disabled: !isUseable, active: isActiveEdit }"
-                @click="editPalette">EDIT</div>
+                :class="{ disabled: settings.isPaletteEmpty, active: isActiveEdit }"
+                @click="editColor"
+                v-if="isMounted">EDIT</div>
             <div id="removeColorPaletteButton" class="colorPaletteButton standard-border"
-                :class="{ disabled: !isUseable, active: isActiveRemove }"
-                @click="removePalette">REMOVE</div>
+                :class="{ disabled: settings.isPaletteEmpty, active: isActiveRemove }"
+                @click="removeColor"
+                v-if="isMounted">REMOVE</div>
         </div>
         <div id="colorPalette-area">
             <colorPaletteBox 
                 v-for="color in colors" :key="color.id" :color="color.hex"
                 :style="{ background: color.hex }"
                 v-if="isMounted"
-                @click="changeColor(color.hex, color.id)"/>
-            <colorPaletteBox v-if="allowAddColors" id="addBoxButton" @click="addColor" > <plusGraphic /> </colorPaletteBox  >
+                @click="handleClick(color.hex, color.id)"/>
+            <colorPaletteBox v-if="!settings.isPaletteFull && isMounted" id="addBoxButton" @click="addColor"> <plusGraphic /> </colorPaletteBox  >
         </div>
     </leftToolsBg>
 </template>
@@ -32,6 +39,11 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4px;
+}
+.colorPalette-selector{
+    width: 100%;
+    aspect-ratio: 4;
+    padding: 4px;
 }
 .colorPaletteButton {
     width: 100%;
@@ -97,54 +109,33 @@
 </style>
 
 <script setup>
+const settings = useSettingsStore();
+
 let isMounted = ref(false);
-const prefs = activeSettings()
-let allowAddColors = ref(true);
-const colors = computed(() => prefs.activePalette())
-let isUseable = ref(false);
+
 const isActiveEdit = ref(false);
 const isActiveRemove = ref(false);
 
-onMounted(() => {
-    isMounted.value = true
-    allowAddColors = computed(() => prefs.activePalette().length < prefs.paletteSettings.maxPaletteSize);
-    if (prefs.activePalette().length >= prefs.paletteSettings.maxPaletteSize) allowAddColors.value = false;
-    isUseable = computed(() => prefs.activePalette().length > 0);
-    console.log(prefs.activePalette().length);
-    
-})
+const colors = computed(() => settings.activePalette);
 
+onMounted(() => { isMounted.value = true; });
 
+function addColor() { settings.addColor(settings.palette.activeColorHex); };
 
-
-function addColor() {
-    prefs.addColor(prefs.paletteSettings.currentColor)
-    
-    const paletteSize = prefs.activePalette().length;
-    
-    if (paletteSize >= prefs.paletteSettings.maxPaletteSize) allowAddColors.value = false;
-}
-function changeColor(color, id) {
-    if (isActiveEdit.value) {
-        const square = prefs.activePalette().find(color => color.id === id)
-        square.hex = prefs.paletteSettings.currentColor;
-    }else if (isActiveRemove.value) {
-        const squareI = prefs.activePalette().findIndex(color => color.id === id)
-        prefs.activePalette().splice(squareI, 1)
-    }else {
-        prefs.paletteSettings.currentColor = color;
-    }
+function handleClick(color, id) {
+    if      (isActiveEdit.value)    settings.updateColorById(id, settings.palette.activeColorHex);
+    else if (isActiveRemove.value)  settings.removeColorById(id);
+    else                            settings.palette.activeColorHex = color;
     
 }
-function editPalette() {
-    if (isActiveRemove.value) { isActiveRemove.value = false; }
+function editColor() {
+    if (isActiveRemove.value) { isActiveRemove.value = false; };
     isActiveEdit.value = !isActiveEdit.value;
 }
-function removePalette() {
+function removeColor() {
     if (isActiveEdit.value) { isActiveEdit.value = false; }
     isActiveRemove.value = !isActiveRemove.value;
 }
-
 </script>
 
 

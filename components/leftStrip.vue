@@ -20,7 +20,7 @@
     min-height: fit-content;
     box-shadow: inset -2px 2px 0px 0px var(--muted-gray);
     border-width: 2px 2px 0 0;
-    padding: 4px;
+    padding: 6px 6px 4px 4px;
 
     background-color: var(--warm-beige);
 }
