@@ -2,26 +2,23 @@
     <leftToolsBg class="colorPaletteWrapper">
         <div class="colorPalette-selector">
             <div id="colorPaletteSelector" class="standard-border colorPaletteButton">
-                {{isMounted ? settings.palette.currentPaletteName : ''}}
+                <span>Palette: {{settings.palette.activePaletteName}}</span>
             </div>
         </div>
         <div class="colorPalette-settings">
             <div id="editColorPaletteButton" class="colorPaletteButton standard-border"
                 :class="{ disabled: settings.isPaletteEmpty, active: isActiveEdit }"
-                @click="editColor"
-                v-if="isMounted">EDIT</div>
+                @click="editColor" >EDIT</div>
             <div id="removeColorPaletteButton" class="colorPaletteButton standard-border"
                 :class="{ disabled: settings.isPaletteEmpty, active: isActiveRemove }"
-                @click="removeColor"
-                v-if="isMounted">REMOVE</div>
+                @click="removeColor" >REMOVE</div>
         </div>
         <div id="colorPalette-area">
             <colorPaletteBox 
                 v-for="color in colors" :key="color.id" :color="color.hex"
                 :style="{ background: color.hex }"
-                v-if="isMounted"
                 @click="handleClick(color.hex, color.id)"/>
-            <colorPaletteBox v-if="!settings.isPaletteFull && isMounted" id="addBoxButton" @click="addColor"> <plusGraphic /> </colorPaletteBox  >
+            <colorPaletteBox v-if="!settings.isPaletteFull" id="addBoxButton" @click="addColor"><plusGraphic /></colorPaletteBox  >
         </div>
     </leftToolsBg>
 </template>
@@ -44,6 +41,9 @@
     width: 100%;
     aspect-ratio: 4;
     padding: 4px;
+
+    display: flex;
+    flex-direction: column;
 }
 .colorPaletteButton {
     width: 100%;
@@ -111,14 +111,9 @@
 <script setup>
 const settings = useSettingsStore();
 
-let isMounted = ref(false);
-
 const isActiveEdit = ref(false);
 const isActiveRemove = ref(false);
-
 const colors = computed(() => settings.activePalette);
-
-onMounted(() => { isMounted.value = true; });
 
 function addColor() { settings.addColor(settings.palette.activeColorHex); };
 

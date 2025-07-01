@@ -1,5 +1,5 @@
 <template>
-    <div id="workAreaWrapper" class="standard-border" ref="scrollArea"
+    <div id="workAreaWrapper" ref="scrollArea"
         @wheel="handleScroll"
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"
@@ -7,18 +7,24 @@
         @mouseleave="stopDragging">
         <div id="workArea" ref="workArea">
             <div id="canvasWrapper" class="standard-border" ref="canvasWrapper">
-                <div id="canvasStack" ref="canvasStack" v-if="isMounted">
+                <div id="canvasStack" ref="canvasStack">
                     <canvas id="canvasBg" ref="canvasBg"
                         :width=pixelsOnX
                         :height=pixelsOnY></canvas>
-                    <canvas id="canvas" ref="canvas"
+                    <canvas 
+                        v-for="canvas in settings.canvas.layers"
+                        :key="canvas"
+                        :ref="layer => layer && canvasMap.set(canvas, layer)"
+                        :width="settings.canvas.width"
+                        :height="settings.canvas.height"></canvas>
+                    <canvas id="handlerCanvas" ref="handlerCanvas"
+                        @click="handleClick"
                         :width=pixelsOnX
-                        :height=pixelsOnY
-                        @click="handleClick"></canvas>
-                    <canvas id="canvasGrid" ref="canvasGrid"
-                            :width=pixelsOnX
-                            :height=pixelsOnY></canvas>
-                    </div>
+                        :height=pixelsOnY></canvas>
+                        <canvas id="canvasGrid" ref="canvasGrid"
+                        :width=pixelsOnX
+                        :height=pixelsOnY></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -31,11 +37,27 @@
 
     width: 100%;
     height: 100%;
-    box-shadow: inset 0 0 0px 2px var(--muted-gray);
+    box-shadow: inset 0 0 0px 8px var(--muted-gray),
+        inset 0 0 0 10px var(--shadow-brown);
     border-width: 2px;
     background-color: var(--pastel-blue);
 
-    overflow: auto;
+    overflow: scroll;
+
+    &::-webkit-scrollbar { 
+        width: 8px;
+        height: 8px;
+    }
+    &::-webkit-scrollbar-track {
+        background-color: var(--muted-gray);
+        /* box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3); */
+    }
+    &::-webkit-scrollbar-corner {
+        background-color: var(--muted-gray);
+    }
+    &::-webkit-scrollbar-thumb { 
+        background-color: var(--faded-orange);
+    }
 }
 #workArea {
     position: absolute;
@@ -86,7 +108,7 @@ canvas {
 #canvasBg{
     background-color: var(--light-gray);
 }
-#canvas{
+#handlerCanvas{
     pointer-events: all;
 }
 /* #canvasGrid{
@@ -94,28 +116,25 @@ canvas {
 </style>
 
 <script setup>
-import draw from '~/composable/canvas/draw'
-import drawGrid from '~/composable/canvas/drawGrid'
-import drawBackground from '~/composable/canvas/drawBackground'
+import draw from '~/composable/canvas/draw';
+import drawGrid from '~/composable/canvas/drawGrid';
+import drawBackground from '~/composable/canvas/drawBackground';
 
 const settings = useSettingsStore();
 
-const isMounted = ref(false)
-
-const workArea = ref(null)
-const scrollArea = ref(null)
-const canvasStack = ref(null)
+const scrollArea    = ref(null);
+const workArea      = ref(null);
 const canvasWrapper = ref(null);
-const canvasBg = ref(null)
-const canvas = ref(null)
-const canvasGrid = ref(null)
+const canvasStack   = ref(null);
+const canvasBg      = ref(null);
+const canvasMap     = new Map();
+const canvas        = computed (()=> canvasMap.get(settings.activeLayer));
+const canvasGrid    = ref(null);
 
-let pixelsOnX = ref(settings.canvas.width)
-let pixelsOnY = ref(settings.canvas.height)
+let pixelsOnX = ref(settings.canvas.width);
+let pixelsOnY = ref(settings.canvas.height);
 
-const canvases = [canvasBg, canvas, canvasGrid]
-
-const drawGridParams = computed(()=>[
+const drawGridParams       = computed(()=>[
     canvasGrid,
     settings.canvas.width,
     settings.canvas.height, 
@@ -124,111 +143,100 @@ const drawGridParams = computed(()=>[
     settings.canvas.grid.lineWidthPx,
     !settings.canvas.showGrid
 ])
-
 const drawBackgroundParams = computed(()=>[
     canvasBg,
     settings.canvas.background.sizePx,
     settings.canvas.background.colors,
     !settings.canvas.showBackground
-]) 
+]);
 
 onMounted(()=>{
-    isMounted.value = true
-    nextTick(()=>{
-        const canvasObserver = new ResizeObserver( ()=> {
-            const xPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().width / pixelsOnX.value);
-            const yPixelRatio =  Math.ceil(canvasWrapper.value.getBoundingClientRect().height / pixelsOnY.value);
-            const ratio = Math.min(xPixelRatio, yPixelRatio);
-            const width = Math.round(ratio * pixelsOnX.value)
-            const height = Math.round(ratio *pixelsOnY.value)
-            
-            canvasStack.value.style.width = `${width}px`
-            canvasStack.value.style.height = `${height}px`
-
-            canvasGrid.value.style.width = `${width}px`
-            canvasGrid.value.style.height = `${height}px`
-            const ctx = canvasGrid.value.getContext('2d')
-            ctx.canvas.width = width
-            ctx.canvas.height = height
-
-            drawGrid(...drawGridParams.value)
-        })
+    const canvasObserver  = new ResizeObserver( ()=> {
+        const xPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().width  / pixelsOnX.value);
+        const yPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().height / pixelsOnY.value);
+        const ratio  = Math.min(xPixelRatio, yPixelRatio);
+        const width  = Math.round(ratio * pixelsOnX.value);
+        const height = Math.round(ratio *pixelsOnY.value);
         
-        canvasObserver.observe(canvasWrapper.value)
-    
-        drawBackground(...drawBackgroundParams.value)
-    })
-})
-watch( () => settings.canvas.showGrid,
-    () => { drawGrid(...drawGridParams.value) }
-)
-watch( () => settings.canvas.showBackground,
-    ()=>{ 
-        console.log(settings.canvas.showBackground);
-        
-        drawBackground(...drawBackgroundParams.value) 
-    }
-)
+        canvasStack.value.style.width  = `${width}px`;
+        canvasStack.value.style.height = `${height}px`;
+
+        const ctx = canvasGrid.value.getContext('2d');
+        canvasGrid.value.style.width  = `${width}px`;
+        canvasGrid.value.style.height = `${height}px`;
+        ctx.canvas.width  = width;
+        ctx.canvas.height = height;
+
+        drawGrid(...drawGridParams.value);
+    });
+    canvasObserver.observe(canvasWrapper.value);
+
+    drawBackground(...drawBackgroundParams.value);
+});
+watch( () => settings.canvas.showGrid,       ()=> { drawGrid(...drawGridParams.value);});
+watch( () => settings.canvas.showBackground, ()=> { drawBackground(...drawBackgroundParams.value);});
 
 function handleClick(e){
-    const rect = canvas.value.getBoundingClientRect()
+    const tool   = settings.toolbox.activeTool
+    
+    const rect   = canvas.value.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const x = Math.floor(mouseX/(rect.width/pixelsOnX.value)) //real pixels / drawing pixels
-    const y = Math.floor(mouseY/(rect.height/pixelsOnY.value))
+    const x      = Math.floor(mouseX/(rect.width/pixelsOnX.value)); //real pixels / drawing pixels
+    const y      = Math.floor(mouseY/(rect.height/pixelsOnY.value));
     
-    draw(canvas, x, y, settings.palette.activeColorHex)
-}
+    draw(canvas, x, y, settings.palette.activeColorHex);
+};
 
 function handleScroll(e) {
     e.preventDefault();    
 
     const currentZoom = parseInt(getComputedStyle(workArea.value).getPropertyValue('--zoom'));
-    const step = settings.canvas.zoom.stepPercent;
+    const step   = settings.canvas.zoom.stepPercent;
 
-    const rect = scrollArea.value.getBoundingClientRect();
+    const rect   = scrollArea.value.getBoundingClientRect();
     const mouseX = e.clientX - rect.left + scrollArea.value.scrollLeft;
     const mouseY = e.clientY - rect.top + scrollArea.value.scrollTop;
     
-    let newZoom = currentZoom + (e.deltaY < 0 ? step : -step);
-    newZoom = Math.min(settings.canvas.zoom.maxPercent, Math.max(settings.canvas.zoom.minPercent, newZoom));
-    const scale = newZoom / currentZoom;
+    let newZoom  = currentZoom + (e.deltaY < 0 ? step : -step);
+    newZoom      = Math.min(settings.canvas.zoom.maxPercent, Math.max(settings.canvas.zoom.minPercent, newZoom));
+    const scale  = newZoom / currentZoom;
     
     workArea.value.style.setProperty('--zoom', newZoom);
     scrollArea.value.scrollLeft = (mouseX * scale) - (e.clientX - rect.left);
-    scrollArea.value.scrollTop = (mouseY * scale) - (e.clientY - rect.top);
+    scrollArea.value.scrollTop  = (mouseY * scale) - (e.clientY - rect.top);
 }
 
-let origin = null
+let origin = null;
 
 function handleMouseDown(e) {
-    if (e.button !== 1) return
-    e.preventDefault()
+    if (e.button !== 1) return;
+    e.preventDefault();
 
-    const scrollable = scrollArea.value
+    const area = scrollArea.value;
     origin = {
-        x: e.clientX,
-        y: e.clientY,
-        left: scrollable.scrollLeft,
-        top: scrollable.scrollTop,
-    }
-    scrollable.style.cursor = 'grabbing'
-}
+        x:    e.clientX,
+        y:    e.clientY,
+        left: area.scrollLeft,
+        top:  area.scrollTop,
+    };
+    area.style.cursor = 'grabbing';
+};
 
 function handleMouseMove(e) {
-    if (!origin) return
+    if (!origin) return;
 
-    const scrollable = scrollArea.value
-    scrollable.scrollLeft = origin.left - (e.clientX - origin.x)
-    scrollable.scrollTop  = origin.top  - (e.clientY - origin.y)
-}
+    const area = scrollArea.value
+    area.scrollLeft = origin.left - (e.clientX - origin.x);
+    area.scrollTop  = origin.top  - (e.clientY - origin.y);
+};
 
 function stopDragging() {
-    if (!origin) return
-    origin = null
-    scrollArea.value.style.cursor = 'default'
-}
+    if (!origin) return;
+    origin = null;
+    scrollArea.value.style.cursor = 'default';
+};
 
 
 

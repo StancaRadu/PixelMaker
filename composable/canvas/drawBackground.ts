@@ -5,9 +5,6 @@ export default function drawBackgroundChecker(canvas: any, squareSize: number, c
     const width = ctx.canvas.width
     const height = ctx.canvas.height
     
-    console.log(clear);
-    
-
     let swapper = false;
     let swapperAtBeginning = false
     

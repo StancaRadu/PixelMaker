@@ -28,7 +28,7 @@
                         <div class="menuItem">
                             <label> <input type="checkbox" v-model="settings.canvas.showBackground" /> Show background </label>
                         </div>
-                        <div class="menuItem">Grid settings</div>
+                        <div class="menuItem">Background settings</div>
                         <div class="menuItem"></div>
                     </div>
                 </div>
@@ -92,9 +92,9 @@
     width: 100%;
     min-width: max-content;
     height: fit-content;
-    border: 2px solid transparent;
-    border-width: 2px 0;
-    padding: 2px 6px;
+    /* border: 2px solid transparent; */
+    /* border-width: 2px 0; */
+    padding: 2px calc(1rem + 6px);
 
     text-align: left;
     cursor: pointer;
@@ -102,35 +102,49 @@
     position: relative;
 
     &:hover{
-        border-color: var(--shadow-brown);
+        /* border-color: var(--shadow-brown); */
+        background-color: var(--faded-orange);
     }
 
-    label { cursor: pointer }
+    label {
+        cursor: pointer;
+
+        position: relative;
+
+        input[type="checkbox"]{
+            position: absolute;
+            aspect-ratio: 1;
+            height: 1rem;
+            left: calc(-1rem - 3px);
+            top: calc(1rem - 1lh + 2px);
+        }
+    }
 }
 .menuSplitter{
     width: 100%;
+    margin: 4px 0;
     border: 0 dashed var(--faded-orange);
     border-width: 2px;
 }
 
 
 .hoverRight{
-    top: -2px;
+    top: 0;
     left: calc(100%);
 }
 </style>
 
-<script setup>
+<script lang="ts" setup>
 const settings = useSettingsStore();
-const activeMenus = ref([])
+const activeMenus = ref<string[]>([])
 
-function openMenu(name){
+function openMenu(name: string){
     if (!activeMenus.value.includes(name)) {
-        activeMenus.value.push(name)
+        activeMenus.value.push(name);
     }
 }
-function closeMenu(name){
-    activeMenus.value = activeMenus.value.filter(m => m !== name)
+function closeMenu(name: string){
+    activeMenus.value = activeMenus.value.filter(menu => menu !== name);
 }
 
 </script>

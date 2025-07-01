@@ -1,6 +1,6 @@
 <template>
     <div id="rightStrip" class="standard-border">
-        <div class="tool-area"></div>
+        <Toolbox />
     </div>
 </template>
 
@@ -16,8 +16,4 @@
     background-color: var(--warm-beige);
 }
 
-.tool-area {
-    width: 2lh;
-    height: 100%;
-}
 </style>

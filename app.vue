@@ -23,7 +23,7 @@
         "topStrip topStrip topStrip"
         "leftStrip main rightStrip"
         "leftStrip bottomStrip bottomStrip";
-    grid-template-rows: auto 1fr 200px;
+    grid-template-rows: auto 1fr auto;
     grid-template-columns: 200px 1fr auto;
 }
 
