@@ -2,7 +2,14 @@
     <div id="menuBar">
         <div class="menuTab" id="menuItemFile" @mouseenter="openMenu('file')" @mouseleave="closeMenu('file')">
             <span>File</span>
-            <div class="hoverMenu"  v-if="activeMenus.includes('file')"></div>
+            <div></div>
+            <div class="hoverMenu"  v-if="activeMenus.includes('file')">
+                <div class="menuItem" @click="newSprite">New</div>
+                <div class="menuItem">Import</div>
+                <div class="menuItem">Export</div>
+                <div class="menuSplitter"></div>
+                <div class="menuItem"></div>
+            </div>
         </div>
         <div class="menuTab" id="menuItemView" @mouseenter="openMenu('edit')" @mouseleave="closeMenu('edit')">
             <span>Edit</span>
@@ -145,6 +152,11 @@ function openMenu(name: string){
 }
 function closeMenu(name: string){
     activeMenus.value = activeMenus.value.filter(menu => menu !== name);
+}
+
+function newSprite(){
+    settings.canvas.layers = []
+    settings.addLayer()
 }
 
 </script>

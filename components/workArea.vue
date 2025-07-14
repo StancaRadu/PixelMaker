@@ -9,8 +9,8 @@
             <div id="canvasWrapper" class="standard-border" ref="canvasWrapper">
                 <div id="canvasStack" ref="canvasStack">
                     <canvas id="canvasBg" ref="canvasBg"
-                        :width=pixelsOnX
-                        :height=pixelsOnY></canvas>
+                        :width=drawingWidth
+                        :height=drawingHeight></canvas>
                     <canvas 
                         v-for="canvas in settings.canvas.layers"
                         :key="canvas"
@@ -19,11 +19,11 @@
                         :height="settings.canvas.height"></canvas>
                     <canvas id="handlerCanvas" ref="handlerCanvas"
                         @click="handleClick"
-                        :width=pixelsOnX
-                        :height=pixelsOnY></canvas>
-                        <canvas id="canvasGrid" ref="canvasGrid"
-                        :width=pixelsOnX
-                        :height=pixelsOnY></canvas>
+                        :width=drawingWidth
+                        :height=drawingHeight></canvas>
+                    <canvas id="canvasGrid" ref="canvasGrid"
+                        :width=drawingWidth
+                        :height=drawingHeight></canvas>
                 </div>
             </div>
         </div>
@@ -39,6 +39,7 @@
     height: 100%;
     box-shadow: inset 0 0 0px 8px var(--muted-gray),
         inset 0 0 0 10px var(--shadow-brown);
+    border: 2px solid var(--shadow-brown);    
     border-width: 2px;
     background-color: var(--pastel-blue);
 
@@ -111,8 +112,6 @@ canvas {
 #handlerCanvas{
     pointer-events: all;
 }
-/* #canvasGrid{
-} */
 </style>
 
 <script setup>
@@ -127,12 +126,11 @@ const workArea      = ref(null);
 const canvasWrapper = ref(null);
 const canvasStack   = ref(null);
 const canvasBg      = ref(null);
-const canvasMap     = new Map();
+const canvasMap     = reactive(new Map());
 const canvas        = computed (()=> canvasMap.get(settings.activeLayer));
 const canvasGrid    = ref(null);
-
-let pixelsOnX = ref(settings.canvas.width);
-let pixelsOnY = ref(settings.canvas.height);
+const drawingWidth  = ref(settings.canvas.width);
+const drawingHeight = ref(settings.canvas.height);
 
 const drawGridParams       = computed(()=>[
     canvasGrid,
@@ -152,16 +150,16 @@ const drawBackgroundParams = computed(()=>[
 
 onMounted(()=>{
     const canvasObserver  = new ResizeObserver( ()=> {
-        const xPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().width  / pixelsOnX.value);
-        const yPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().height / pixelsOnY.value);
+        const xPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().width  / drawingWidth.value);
+        const yPixelRatio = Math.ceil(canvasWrapper.value.getBoundingClientRect().height / drawingHeight.value);
         const ratio  = Math.min(xPixelRatio, yPixelRatio);
-        const width  = Math.round(ratio * pixelsOnX.value);
-        const height = Math.round(ratio *pixelsOnY.value);
+        const width  = Math.round(ratio * drawingWidth.value);
+        const height = Math.round(ratio *drawingHeight.value);
+        const ctx    = canvasGrid.value.getContext('2d');
         
         canvasStack.value.style.width  = `${width}px`;
         canvasStack.value.style.height = `${height}px`;
 
-        const ctx = canvasGrid.value.getContext('2d');
         canvasGrid.value.style.width  = `${width}px`;
         canvasGrid.value.style.height = `${height}px`;
         ctx.canvas.width  = width;
@@ -169,9 +167,8 @@ onMounted(()=>{
 
         drawGrid(...drawGridParams.value);
     });
-    canvasObserver.observe(canvasWrapper.value);
-
     drawBackground(...drawBackgroundParams.value);
+    canvasObserver.observe(canvasWrapper.value);
 });
 watch( () => settings.canvas.showGrid,       ()=> { drawGrid(...drawGridParams.value);});
 watch( () => settings.canvas.showBackground, ()=> { drawBackground(...drawBackgroundParams.value);});
@@ -183,8 +180,8 @@ function handleClick(e){
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const x      = Math.floor(mouseX/(rect.width/pixelsOnX.value)); //real pixels / drawing pixels
-    const y      = Math.floor(mouseY/(rect.height/pixelsOnY.value));
+    const x      = Math.floor(mouseX/(rect.width/drawingWidth.value)); //real pixels / drawing pixels
+    const y      = Math.floor(mouseY/(rect.height/drawingHeight.value));
     
     draw(canvas, x, y, settings.palette.activeColorHex);
 };

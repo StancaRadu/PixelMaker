@@ -1,49 +1,3 @@
-// export const activeSettings = defineStore('activeSettings', {
-//     state: () => ({
-//         paletteSettings:{
-//             maxPaletteSize: 16,
-//             paletteSize: 0,
-//             activePaletteName: 'DEFAULT',
-//             currentColor: '#FFFFFFFF',
-//             palettes: {
-//                 DEFAULT:  [] as { id: number, hex: string }[],
-//                 PASTEL:  [] as { id: number, hex: string }[],
-//             } as Record<string, { id: number; hex: string }[]>,
-//         },
-//         canvasSettings: {
-//             width: 16,
-//             height: 16,
-//             minZoom: 2000,
-//             maxZoom: 40,
-//             zoomStep: 20,
-//             showGrid: true,
-//             gridSize: 4,
-//             gridWidth: 2,
-//             gridColor: '#FFFFFF',
-//             showBackground: true,
-//             backgroundSize: 4,
-//             backgroundColors: ['#555555', '#757575'],
-//         },
-//     }),
-//     actions: {
-//         addColor(hex: string) {
-//             const id = Date.now() + Math.random();
-//             this.activePalette().push({ id, hex });
-//         },
-//         removeColor(index: number) {
-//             this.activePalette().splice(index, 1)
-//         },
-//         activePalette(){
-//             return this.paletteSettings.palettes[this.paletteSettings.activePaletteName]
-//         },
-//         setActivePalette(name: string) {
-//             if (this.paletteSettings.palettes.hasOwnProperty(name)) {
-//                 this.paletteSettings.activePaletteName = name
-//             }
-//         }
-//   },
-//     persist: true,
-// })
 type Color = { id: number; hex: string; };
 
 export const useSettingsStore  = defineStore('settings', {
@@ -61,7 +15,7 @@ export const useSettingsStore  = defineStore('settings', {
             width:  16,
             height: 16,
             activeLayer: 0,
-            layers: [] as number[],
+            layers: [0, 1],
             zoom: {
                 minPercent:  40,
                 maxPercent:  2000,
@@ -111,6 +65,7 @@ export const useSettingsStore  = defineStore('settings', {
     },
     actions: {
         addLayer() {
+            // this.canvas.layers = []
             const id = this.createCanvasId()
             this.canvas.layers.push(id);
             this.canvas.activeLayer = id;
@@ -136,12 +91,14 @@ export const useSettingsStore  = defineStore('settings', {
             if (this.toolbox.hasOwnProperty(name)) this.toolbox.activeTool = name
         },
         createCanvasId(): number{
-            for (let index = 0; index < this.canvas.layers.length; index++) {
+            console.log(this.canvas.activeLayer);
+            for (let index = 0; index <= this.canvas.layers.length; index++) {
                 if (!this.canvas.layers.includes(index)) {
-                    return index
+                    console.log(index);
+                    
+                    return index;
                 }           
             }
-            return 0
         }
         
     },
