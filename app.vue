@@ -38,6 +38,8 @@
 </style>
 
 <script setup>
+const { $firebase } = useNuxtApp()
+
 const ready = ref(false)
 
 onMounted(() => {
