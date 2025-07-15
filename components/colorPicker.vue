@@ -5,7 +5,7 @@
             :class="{ 'activeBorder': showColorMenu }"
             @click="openColorMenu">
             <span>{{ isMounted ? settings.palette.activeColorHex : '#FFFFFFFF' }}</span>
-            <floatingMenu class="colorPickerMenu"
+            <toggleMenu class="colorPickerMenu"
                 v-if="showColorMenu"
                 @click.stop>
                 <div id="colorMenu">
@@ -63,7 +63,7 @@
                     <!-- <div class="colorSelector" id="colorSelectorHSV"></div> -->
                 </div>
                 </div>
-            </floatingMenu>
+            </toggleMenu>
             
         </div>
     </leftToolsBg>

@@ -42,7 +42,15 @@ const { $firebase } = useNuxtApp()
 
 const ready = ref(false)
 
-onMounted(() => {
-  requestAnimationFrame(() => { ready.value = true })
+
+onMounted(async () => {
+    const startTime = performance.now()
+
+    await doInitialSetup()
+
+    const delay = Math.max(0, 1000 - performance.now() - startTime)
+
+    setTimeout(() => { ready.value = true }, delay)
 })
+async function doInitialSetup() { }
 </script>

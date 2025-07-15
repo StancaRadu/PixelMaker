@@ -1,5 +1,8 @@
 <template>
     <div id="menuBar">
+        <FloatingMenu v-if="activeFloatingMenu" >
+            <component :is="activeFloatingMenu"></component>
+        </FloatingMenu>
         <div class="menuTab" id="menuItemFile" @mouseenter="openMenu('file')" @mouseleave="closeMenu('file')">
             <span>File</span>
             <div></div>
@@ -18,6 +21,7 @@
         <div class="menuTab" id="menuItemView" @mouseenter="openMenu('view')" @mouseleave="closeMenu('view')">
             <span>View</span>
             <div class="hoverMenu" v-if="activeMenus.includes('view')">
+<!-- Grid -->
                 <div class="menuItem" @mouseenter="openMenu('grid')" @mouseleave="closeMenu('grid')">
                     Grid
                     <div class="hoverMenu hoverRight" v-if="activeMenus.includes('grid')">
@@ -28,14 +32,17 @@
                         <div class="menuItem"></div>
                     </div>
                 </div>
+<!-- Tile mode -->
                 <div class="menuItem">Tiled Mode</div>
-                <div class="menuItem" @mouseenter="openMenu('background')" @mouseleave="closeMenu('background')">
-                    Background
+<!-- Background -->
+                <div class="menuItem" @mouseenter="openMenu('background')" @mouseleave="closeMenu('background')">Background
                     <div class="hoverMenu hoverRight" v-if="activeMenus.includes('background')">
                         <div class="menuItem">
                             <label> <input type="checkbox" v-model="settings.canvas.showBackground" /> Show background </label>
                         </div>
-                        <div class="menuItem">Background settings</div>
+    <!-- Background settings -->
+                        <div class="menuItem" @click="openFloatingMenu('backgroundSettingsMenu')">Background settings
+                        </div>
                         <div class="menuItem"></div>
                     </div>
                 </div>
@@ -144,14 +151,16 @@
 <script lang="ts" setup>
 const settings = useSettingsStore();
 const activeMenus = ref<string[]>([])
+const activeFloatingMenu = ref<any | null>(null);
 
 function openMenu(name: string){
-    if (!activeMenus.value.includes(name)) {
-        activeMenus.value.push(name);
-    }
+    if (!activeMenus.value.includes(name)) activeMenus.value.push(name);
 }
 function closeMenu(name: string){
     activeMenus.value = activeMenus.value.filter(menu => menu !== name);
+}
+function closeAllMenus(){
+    activeMenus.value = [];
 }
 
 function newSprite(){
@@ -159,4 +168,19 @@ function newSprite(){
     settings.addLayer()
 }
 
+async function openFloatingMenu(menuName: string) {
+    const menusMap = {
+        'backgroundSettingsMenu': () => import('./backgroundSettingsMenu.vue'),
+    }  as Record<string, () => Promise<any>>;
+    // activeFloatingMenu.value = menusMap[menuName] || null;
+    const component = menusMap[menuName];
+    if (component) {
+        const resolvedComponent = await component();
+        activeFloatingMenu.value = resolvedComponent.default;
+    } else {
+        activeFloatingMenu.value = null;
+    }
+}
+
 </script>
+

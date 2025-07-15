@@ -91,7 +91,8 @@ export const useSettingsStore  = defineStore('settings', {
             if (this.toolbox.hasOwnProperty(name)) this.toolbox.activeTool = name
         },
         createCanvasId(): number{
-            console.log(this.canvas.activeLayer);
+            console.log(this.canvas.layers[0]);
+            
             for (let index = 0; index <= this.canvas.layers.length; index++) {
                 if (!this.canvas.layers.includes(index)) {
                     console.log(index);
@@ -99,6 +100,7 @@ export const useSettingsStore  = defineStore('settings', {
                     return index;
                 }           
             }
+            return 0;
         }
         
     },
