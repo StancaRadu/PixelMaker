@@ -1,4 +1,4 @@
-import draw from '~/composable/canvas/draw'
+import draw from '~/composable/canvas/drawPixel'
 
 export default function drawBackgroundChecker(canvas: any, squareSize: number, colors: string[], clear: boolean){
     const ctx = canvas.value.getContext('2d');

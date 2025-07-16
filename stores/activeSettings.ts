@@ -21,6 +21,7 @@ export const useSettingsStore  = defineStore('settings', {
                 maxPercent:  2000,
                 stepPercent: 20,
             },
+            showAffectedArea: true,
             showGrid: true,
             grid: {
                 sizePx:      4,
@@ -34,17 +35,19 @@ export const useSettingsStore  = defineStore('settings', {
             },
         },
         toolbox: {
-            activeTool: 'pencil',
+            activeToolName: 'pencil',
             pencil: {
                 width: 1,
                 height: 1,
+                action: 'draw',
             },
             eraser: {
                 width: 1,
                 height: 1,
+                action: 'erase',
             },
             fill: {},
-        },
+        } as any,
     }),
     getters: {
         activeLayer(): number     {
@@ -61,6 +64,9 @@ export const useSettingsStore  = defineStore('settings', {
         },
         isPaletteEmpty(): boolean {
             return this.paletteLength < 1
+        },
+        activeToolSettings(): any{
+            return this.toolbox[this.toolbox.activeToolName];
         }
     },
     actions: {
@@ -88,7 +94,7 @@ export const useSettingsStore  = defineStore('settings', {
             }
         },
         setActiveTool(name: string) {
-            if (this.toolbox.hasOwnProperty(name)) this.toolbox.activeTool = name
+            if (this.toolbox.hasOwnProperty(name)) this.toolbox.activeToolName = name
         },
         createCanvasId(): number{
             console.log(this.canvas.layers[0]);

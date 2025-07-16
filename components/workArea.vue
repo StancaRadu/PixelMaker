@@ -1,10 +1,10 @@
 <template>
     <div id="workAreaWrapper" ref="scrollArea"
         @wheel="handleScroll"
-        @mousedown="handleMouseDown"
-        @mousemove="handleMouseMove"
-        @mouseup="stopDragging"
-        @mouseleave="stopDragging">
+        @mousedown="startDragToPan"
+        @mousemove="dragToPan"
+        @mouseup="stopDragToPan"
+        @mouseleave="stopDragToPan">
         <div id="workArea" ref="workArea">
             <div id="canvasWrapper" class="standard-border" ref="canvasWrapper">
                 <div id="canvasStack" ref="canvasStack">
@@ -17,11 +17,14 @@
                         :ref="layer => layer && canvasMap.set(canvas, layer)"
                         :width="settings.canvas.width"
                         :height="settings.canvas.height"></canvas>
-                    <canvas id="handlerCanvas" ref="handlerCanvas"
-                        @click="handleClick"
+                    <canvas id="canvasGrid" ref="canvasGrid"
                         :width=drawingWidth
                         :height=drawingHeight></canvas>
-                    <canvas id="canvasGrid" ref="canvasGrid"
+                    <canvas id="handlerCanvas" ref="handlerCanvas"
+                        @mousedown="handleMouseDown"
+                        @mousemove="handleMouseMove"
+                        @mouseenter="drawSettings.inside = true"
+                        @mouseleave="drawSettings.inside = false"
                         :width=drawingWidth
                         :height=drawingHeight></canvas>
                 </div>
@@ -72,26 +75,21 @@
     height: calc(1% * var(--zoom));
 }
 #canvasWrapper {
-    /* position: absolute; */
-
     display: flex;
     justify-content: center;
     align-items: center;
     
     width: calc(100% - 200px);
     height: calc(100% - 200px);
-    /* background-color: var(--muted-gray); */
 }
 #canvasStack {
-    /* background-color: tomato; */
     position: relative;
-    z-index: 2;
     
     display: flex;
 
     box-sizing: content-box;
-    width: fit-content;
-    height: fit-content;
+    width: 100%;
+    height: 100%;
     border: 4px solid var(--shadow-brown);
 }   
 canvas {
@@ -101,7 +99,6 @@ canvas {
 
     image-rendering: pixelated;
 
-    /* background-color: green; */
     cursor: crosshair;
 
     pointer-events: none;
@@ -118,19 +115,25 @@ canvas {
 import draw from '~/composable/canvas/draw';
 import drawGrid from '~/composable/canvas/drawGrid';
 import drawBackground from '~/composable/canvas/drawBackground';
+import erase from '~/composable/canvas/erase';
+import getMousePosition from '~/composable/canvas/getMousePosition';
+import getAffectedAreaRect from '~/composable/canvas/getAffectedAreaRect';
 
 const settings = useSettingsStore();
 
-const scrollArea    = ref(null);
-const workArea      = ref(null);
-const canvasWrapper = ref(null);
-const canvasStack   = ref(null);
-const canvasBg      = ref(null);
-const canvasMap     = reactive(new Map());
-const canvas        = computed (()=> canvasMap.get(settings.activeLayer));
-const canvasGrid    = ref(null);
-const drawingWidth  = ref(settings.canvas.width);
-const drawingHeight = ref(settings.canvas.height);
+const scrollArea     = ref(null);                                                                    // Wrapper div in the center area. It stays the same size and has a scrollbar.
+const workArea       = ref(null);                                                                    // Main parent. It expands on scroll and everything inside is set to total width and height.
+const canvasWrapper  = ref(null);                                                                    // Wrapper for the canvas elements. It is centered in the workArea and has a fixed size.
+const canvasStack    = ref(null);
+const canvasBg       = ref(null);
+const canvasMap      = reactive(new Map());
+const canvas         = computed (()=> canvasMap.get(settings.activeLayer));
+const canvasGrid     = ref(null);
+const handlerCanvas  = ref(null);
+const drawingWidth   = ref(settings.canvas.width);
+const drawingHeight  = ref(settings.canvas.height);
+const drawSettings   = ref({x: 0, y: 0, drawX: 0, drawY: 0, inside: false, ratio: 1});
+const affectedPixels = ref([]);
 
 const drawGridParams       = computed(()=>[
     canvasGrid,
@@ -155,15 +158,17 @@ onMounted(()=>{
         const ratio  = Math.min(xPixelRatio, yPixelRatio);
         const width  = Math.round(ratio * drawingWidth.value);
         const height = Math.round(ratio *drawingHeight.value);
-        const ctx    = canvasGrid.value.getContext('2d');
+        const backgroundCtx    = canvasGrid.value.getContext('2d');
+        const handlerCtx = handlerCanvas.value.getContext('2d');
         
+        drawSettings.value.ratio = ratio;
         canvasStack.value.style.width  = `${width}px`;
         canvasStack.value.style.height = `${height}px`;
 
-        canvasGrid.value.style.width  = `${width}px`;
-        canvasGrid.value.style.height = `${height}px`;
-        ctx.canvas.width  = width;
-        ctx.canvas.height = height;
+        backgroundCtx.canvas.width  = width;
+        backgroundCtx.canvas.height = height;
+        handlerCtx.canvas.width  = width;
+        handlerCtx.canvas.height = height;
 
         drawGrid(...drawGridParams.value);
     });
@@ -173,18 +178,41 @@ onMounted(()=>{
 watch( () => settings.canvas.showGrid,       ()=> { drawGrid(...drawGridParams.value);});
 watch( () => settings.canvas.showBackground, ()=> { drawBackground(...drawBackgroundParams.value);});
 
-function handleClick(e){
-    const tool   = settings.toolbox.activeTool
-    
-    const rect   = canvas.value.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+function handleMouseDown(e){
+    if (e.button !== 0) return; // Only handle left mouse button clicks
+    const tool = settings.toolbox.activeTool
+    const x    = drawSettings.value.drawX;
+    const y    = drawSettings.value.drawY;
 
-    const x      = Math.floor(mouseX/(rect.width/drawingWidth.value)); //real pixels / drawing pixels
-    const y      = Math.floor(mouseY/(rect.height/drawingHeight.value));
+    switch (settings.toolbox.activeToolName) {
+        case 'pencil': draw(canvas, affectedPixels.value, settings.palette.activeColorHex);
+            break;
+
+        case 'eraser': erase(canvas, affectedPixels.value);
+            break;
     
-    draw(canvas, x, y, settings.palette.activeColorHex);
+        default: return
+    }
 };
+
+function handleMouseMove(e) {
+    const {drawX, drawY, mouseX, mouseY} = getMousePosition(canvas.value, e, drawingWidth.value, drawingHeight.value);
+    if ( drawX === drawSettings.value.drawX && drawY === drawSettings.value.drawY ) return;
+    drawSettings.value.drawX  = drawX;
+    drawSettings.value.drawY  = drawY;
+    drawSettings.value.mouseX = mouseX;
+    drawSettings.value.mouseY = mouseY;
+
+    affectedPixels.value = getAffectedAreaRect(drawX, drawY, settings.activeToolSettings.width, settings.activeToolSettings.height, settings.canvas.width, settings.canvas.height);
+    
+    if (settings.canvas.showAffectedArea && drawSettings.value.inside) {
+        const handlerCanvasCtx = handlerCanvas.value.getContext('2d');
+        handlerCanvasCtx.clearRect(0, 0, handlerCanvas.value.width, handlerCanvas.value.height);
+        
+        draw(handlerCanvas, affectedPixels.value, '#FFFFFF80', drawSettings.value.ratio);
+    }
+}
+
 
 function handleScroll(e) {
     e.preventDefault();    
@@ -203,11 +231,11 @@ function handleScroll(e) {
     workArea.value.style.setProperty('--zoom', newZoom);
     scrollArea.value.scrollLeft = (mouseX * scale) - (e.clientX - rect.left);
     scrollArea.value.scrollTop  = (mouseY * scale) - (e.clientY - rect.top);
-}
+};
 
 let origin = null;
 
-function handleMouseDown(e) {
+function startDragToPan(e) {
     if (e.button !== 1) return;
     e.preventDefault();
 
@@ -221,7 +249,7 @@ function handleMouseDown(e) {
     area.style.cursor = 'grabbing';
 };
 
-function handleMouseMove(e) {
+function dragToPan(e) {
     if (!origin) return;
 
     const area = scrollArea.value
@@ -229,7 +257,7 @@ function handleMouseMove(e) {
     area.scrollTop  = origin.top  - (e.clientY - origin.y);
 };
 
-function stopDragging() {
+function stopDragToPan() {
     if (!origin) return;
     origin = null;
     scrollArea.value.style.cursor = 'default';

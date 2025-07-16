@@ -1,5 +1,8 @@
-export default function draw( canvas: any, x: number, y:number, color: string, width = 1, height = 1,) {
-    const ctx = canvas.value.getContext('2d')
+import drawPixel from '~/composable/canvas/drawPixel';
+
+export default function draw(canvas: any, pixels: { x: number; y: number }[], color: string, width: number = 1) {
+    const ctx = canvas.value.getContext('2d');
     ctx.fillStyle = color;
-    ctx.fillRect(x, y, width, height);
+    
+    for (const pixel of pixels) drawPixel(canvas, pixel, color, width);
 }

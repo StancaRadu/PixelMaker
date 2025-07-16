@@ -80,11 +80,9 @@ const fill = ref();
 const activeTool = ref()
 
 function handleClick(tool, name) {
+    
     settings.setActiveTool(name)
     activeTool.value.style.top = tool.offsetTop + 'px'
-
-    console.log(settings.toolbox.activeTool);
-    
 }
 
 

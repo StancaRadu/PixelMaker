@@ -1,7 +1,7 @@
 <template>
     <div id="menuBar">
         <FloatingMenu v-if="activeFloatingMenu" >
-            <component :is="activeFloatingMenu"></component>
+            <component v-bind:is="floatingMenus[activeFloatingMenu]"></component>
         </FloatingMenu>
         <div class="menuTab" id="menuItemFile" @mouseenter="openMenu('file')" @mouseleave="closeMenu('file')">
             <span>File</span>
@@ -149,9 +149,14 @@
 </style>
 
 <script lang="ts" setup>
+import backgroundSettingsMenu from './backgroundSettingsMenu.vue';
+
 const settings = useSettingsStore();
 const activeMenus = ref<string[]>([])
 const activeFloatingMenu = ref<any | null>(null);
+const floatingMenus = ref<Record<string, any>>({
+    'backgroundSettingsMenu': backgroundSettingsMenu,
+});
 
 function openMenu(name: string){
     if (!activeMenus.value.includes(name)) activeMenus.value.push(name);
@@ -168,18 +173,9 @@ function newSprite(){
     settings.addLayer()
 }
 
-async function openFloatingMenu(menuName: string) {
-    const menusMap = {
-        'backgroundSettingsMenu': () => import('./backgroundSettingsMenu.vue'),
-    }  as Record<string, () => Promise<any>>;
-    // activeFloatingMenu.value = menusMap[menuName] || null;
-    const component = menusMap[menuName];
-    if (component) {
-        const resolvedComponent = await component();
-        activeFloatingMenu.value = resolvedComponent.default;
-    } else {
-        activeFloatingMenu.value = null;
-    }
+
+function openFloatingMenu(menuName: string) {
+    activeFloatingMenu.value = menuName
 }
 
 </script>

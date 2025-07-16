@@ -3,7 +3,7 @@ import { getAnalytics } from 'firebase/analytics'
 
 export default defineNuxtPlugin(() => {
   const firebaseConfig = {
-    apiKey: process.env.VUE_APP_FIREBASE_API_KEY,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: "pixelmaker-hakuo.firebaseapp.com",
     projectId: "pixelmaker-hakuo",
     storageBucket: "pixelmaker-hakuo.firebasestorage.app",
