@@ -51,6 +51,10 @@ onMounted(async () => {
     const delay = Math.max(0, 1000 - performance.now() - startTime)
 
     setTimeout(() => { ready.value = true }, delay)
+    document.addEventListener('contextmenu', preventRightClick);
 })
-async function doInitialSetup() { }
+async function doInitialSetup() {}
+function preventRightClick(event) {
+  event.preventDefault(); // Prevent the context menu from showing up
+}
 </script>

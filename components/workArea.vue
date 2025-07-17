@@ -22,9 +22,10 @@
                         :height=drawingHeight></canvas>
                     <canvas id="handlerCanvas" ref="handlerCanvas"
                         @mousedown="handleMouseDown"
+                        @mouseup="handleMouseUp"
                         @mousemove="handleMouseMove"
                         @mouseenter="drawSettings.inside = true"
-                        @mouseleave="drawSettings.inside = false"
+                        @mouseleave="handleMouseLeave"
                         :width=drawingWidth
                         :height=drawingHeight></canvas>
                 </div>
@@ -54,7 +55,7 @@
     }
     &::-webkit-scrollbar-track {
         background-color: var(--muted-gray);
-        /* box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3); */
+
     }
     &::-webkit-scrollbar-corner {
         background-color: var(--muted-gray);
@@ -112,15 +113,17 @@ canvas {
 </style>
 
 <script setup>
-import draw from '~/composable/canvas/draw';
+import drawArray from '~/composable/canvas/drawArray';
 import drawGrid from '~/composable/canvas/drawGrid';
 import drawBackground from '~/composable/canvas/drawBackground';
 import erase from '~/composable/canvas/erase';
 import getMousePosition from '~/composable/canvas/getMousePosition';
 import getAffectedAreaRect from '~/composable/canvas/getAffectedAreaRect';
+import computePixels from '~/composable/canvas/computePixels';
 
 const settings = useSettingsStore();
 
+const mousedown      = ref(false);
 const scrollArea     = ref(null);                                                                    // Wrapper div in the center area. It stays the same size and has a scrollbar.
 const workArea       = ref(null);                                                                    // Main parent. It expands on scroll and everything inside is set to total width and height.
 const canvasWrapper  = ref(null);                                                                    // Wrapper for the canvas elements. It is centered in the workArea and has a fixed size.
@@ -133,7 +136,7 @@ const handlerCanvas  = ref(null);
 const drawingWidth   = ref(settings.canvas.width);
 const drawingHeight  = ref(settings.canvas.height);
 const drawSettings   = ref({x: 0, y: 0, drawX: 0, drawY: 0, inside: false, ratio: 1});
-const affectedPixels = ref([]);
+const affectedPixels = ref({tool1: [], tool2: []});
 
 const drawGridParams       = computed(()=>[
     canvasGrid,
@@ -179,23 +182,49 @@ watch( () => settings.canvas.showGrid,       ()=> { drawGrid(...drawGridParams.v
 watch( () => settings.canvas.showBackground, ()=> { drawBackground(...drawBackgroundParams.value);});
 
 function handleMouseDown(e){
-    if (e.button !== 0) return; // Only handle left mouse button clicks
-    const tool = settings.toolbox.activeTool
-    const x    = drawSettings.value.drawX;
-    const y    = drawSettings.value.drawY;
+    document.addEventListener('mouseup', handleMouseUp);
 
-    switch (settings.toolbox.activeToolName) {
-        case 'pencil': draw(canvas, affectedPixels.value, settings.palette.activeColorHex);
+    mousedown.value = e;
+
+    let tool;
+    let setOfPixels;
+    switch (e.button) {
+        case 0: 
+            tool = settings.toolbox.activeTools.tool1;
+            setOfPixels = 'tool1';
+            break;
+        case 2: 
+            tool = settings.toolbox.activeTools.tool2;
+            setOfPixels = 'tool2';
+            break;
+        default: return;
+    }
+
+    switch (tool) {
+        case 'pencil': drawArray(canvas, affectedPixels.value[setOfPixels], settings.palette.activeColorHex);
             break;
 
-        case 'eraser': erase(canvas, affectedPixels.value);
+        case 'eraser': erase(canvas, affectedPixels.value[setOfPixels]);
             break;
     
         default: return
     }
 };
 
+function handleMouseUp(e) {
+    document.removeEventListener('mouseup', handleMouseUp);
+    mousedown.value = false;
+};
+
+function handleMouseLeave() {
+    drawSettings.value.inside = false;
+
+    const handlerCanvasCtx = handlerCanvas.value.getContext('2d');
+    handlerCanvasCtx.clearRect(0, 0, handlerCanvas.value.width, handlerCanvas.value.height);
+};
+
 function handleMouseMove(e) {
+    if (mousedown.value) handleMouseDown(mousedown.value)
     const {drawX, drawY, mouseX, mouseY} = getMousePosition(canvas.value, e, drawingWidth.value, drawingHeight.value);
     if ( drawX === drawSettings.value.drawX && drawY === drawSettings.value.drawY ) return;
     drawSettings.value.drawX  = drawX;
@@ -203,13 +232,15 @@ function handleMouseMove(e) {
     drawSettings.value.mouseX = mouseX;
     drawSettings.value.mouseY = mouseY;
 
-    affectedPixels.value = getAffectedAreaRect(drawX, drawY, settings.activeToolSettings.width, settings.activeToolSettings.height, settings.canvas.width, settings.canvas.height);
+    affectedPixels.value.tool1 = getAffectedAreaRect(drawX, drawY, settings.activeToolSettings1.width, settings.activeToolSettings1.height, settings.canvas.width, settings.canvas.height);
+    affectedPixels.value.tool2 = getAffectedAreaRect(drawX, drawY, settings.activeToolSettings2.width, settings.activeToolSettings2.height, settings.canvas.width, settings.canvas.height);
     
     if (settings.canvas.showAffectedArea && drawSettings.value.inside) {
         const handlerCanvasCtx = handlerCanvas.value.getContext('2d');
         handlerCanvasCtx.clearRect(0, 0, handlerCanvas.value.width, handlerCanvas.value.height);
         
-        draw(handlerCanvas, affectedPixels.value, '#FFFFFF80', drawSettings.value.ratio);
+        drawArray(handlerCanvas, computePixels(affectedPixels.value.tool1, drawSettings.value.ratio) , '#FFFFFF80', drawSettings.value.ratio);
+        drawArray(handlerCanvas, computePixels(affectedPixels.value.tool2, drawSettings.value.ratio), '#FFFFFF80', drawSettings.value.ratio);
     }
 }
 

@@ -35,7 +35,12 @@ export const useSettingsStore  = defineStore('settings', {
             },
         },
         toolbox: {
-            activeToolName: 'pencil',
+            activeTools: {
+                tool1: 'pencil',
+                tool2: 'eraser',
+            },
+            borderColor1: '#4c4b85ff',
+            borderColor2: '#65b8bbff',
             pencil: {
                 width: 1,
                 height: 1,
@@ -65,8 +70,14 @@ export const useSettingsStore  = defineStore('settings', {
         isPaletteEmpty(): boolean {
             return this.paletteLength < 1
         },
-        activeToolSettings(): any{
-            return this.toolbox[this.toolbox.activeToolName];
+        activeToolSettings1(): any{
+            return this.toolbox[this.toolbox.activeTools.tool1];
+        },
+        activeToolSettings2(): any{
+            return this.toolbox[this.toolbox.activeTools.tool2];
+        },
+        activeToolsToArray(): string[] {
+            return [this.toolbox.activeTools.tool1, this.toolbox.activeTools.tool2];    
         }
     },
     actions: {
@@ -93,8 +104,18 @@ export const useSettingsStore  = defineStore('settings', {
                 this.palette.activePaletteName = name;
             }
         },
-        setActiveTool(name: string) {
-            if (this.toolbox.hasOwnProperty(name)) this.toolbox.activeToolName = name
+        setActiveTool(name: string, tool: number) {
+            if (tool == 0 && this.activeToolsToArray[1] === name) {
+                this.toolbox.activeTools.tool2 = this.toolbox.activeTools.tool1;
+                this.toolbox.activeTools.tool1 = name;
+            } else if (tool == 2 && this.activeToolsToArray[0] === name) {
+                this.toolbox.activeTools.tool1 = this.toolbox.activeTools.tool2;
+                this.toolbox.activeTools.tool2 = name;
+            }else if (!this.activeToolsToArray.includes(name)) {
+                if (tool === 0) this.toolbox.activeTools.tool1 = name
+                else if (tool === 2) this.toolbox.activeTools.tool2 = name
+            }
+                
         },
         createCanvasId(): number{
             console.log(this.canvas.layers[0]);
